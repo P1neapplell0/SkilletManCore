@@ -112,14 +112,6 @@ ordering="AFTER"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
-modId="mr_epic_terrain_compatible"
-mandatory=true
-# This version range declares a minimum of the current minecraft version up to but not including the next major version
-versionRange="[0,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.${mod_id}]]
 modId="super_chef"
 mandatory=true
 # This version range declares a minimum of the current minecraft version up to but not including the next major version
@@ -133,6 +125,7 @@ mandatory=true
 versionRange="[0,)"
 ordering="AFTER"
 side="BOTH"
+
 [[dependencies.${mod_id}]]
 modId="biomesoplenty"
 mandatory=true

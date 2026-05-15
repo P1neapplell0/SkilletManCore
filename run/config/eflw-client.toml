@@ -1,8 +1,0 @@
-#是否自动锁敌
-auto_lock = true
-#自动锁敌的有效距离
-#Range: > 1
-auto_lock_dist = 5
-#不会自动锁的实体
-"不会自动锁的实体" = ["minecraft:villager", "minecraft:iron_golem", "minecraft:player", "skillet_man_core:golden_flame"]
-

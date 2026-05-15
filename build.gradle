@@ -166,6 +166,7 @@ dependencies {
     //地图
     implementation fg.deobf("curse.maven:xaeros-world-map-317780:6212636")//大地图
     implementation fg.deobf("curse.maven:xaeros-minimap-263420:6306152")//小地图
+    implementation fg.deobf("curse.maven:epic-terrain-compatible-1137535:6908716")
 
     //更好的村庄
     implementation fg.deobf("curse.maven:better-village-forge-615352:6306266")
@@ -194,12 +195,11 @@ dependencies {
 
     implementation fg.deobf("curse.maven:hungteens-lib-794622:6616773")
 
-    implementation fg.deobf("curse.maven:epic-terrain-compatible-1137535:6439744")
     implementation fg.deobf("curse.maven:biomes-o-plenty-220318:6364065")
     implementation fg.deobf("curse.maven:terrablender-563928:6290448")
     implementation fg.deobf("curse.maven:glitchcore-955399:5787839")
 
-    implementation fg.deobf("curse.maven:ecliptic-seasons-1118306:6544587")
+    implementation fg.deobf("curse.maven:ecliptic-seasons-1118306:8093796")
 
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:4.4.7")
     implementation fg.deobf("curse.maven:fantasy-armor-1083998:6385161")

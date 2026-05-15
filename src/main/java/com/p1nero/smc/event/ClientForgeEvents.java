@@ -24,6 +24,7 @@ import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import yesman.epicfight.api.animation.LivingMotions;
@@ -74,6 +75,11 @@ public class ClientForgeEvents {
     public static void onRenderGui(RenderGuiEvent event) {
         GuiGraphics guiGraphics = event.getGuiGraphics();
         CustomGuiRenderer.renderCustomGui(guiGraphics);
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        CustomGuiRenderer.tick();
     }
 
     public static final List<String> TIPS = new ArrayList<>();

@@ -4,6 +4,7 @@ import com.merlin204.supergolem.client.SGPatchedRenderer;
 import com.p1nero.smc.SkilletManCoreMod;
 import com.p1nero.smc.block.SMCBlockEntities;
 import com.p1nero.smc.block.renderer.BetterStructureBlockRenderer;
+import com.p1nero.smc.client.gui.hud.CustomGuiRenderer;
 import com.p1nero.smc.entity.SMCEntities;
 import com.p1nero.smc.entity.custom.boss.goldenflame.client.BlackHoleRenderer;
 import com.p1nero.smc.entity.custom.boss.goldenflame.client.FlameCircleRenderer;
@@ -47,33 +48,36 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        //BOSS
+        event.enqueueWork(() -> {
+            //BOSS
 
-        EntityRenderers.register(SMCEntities.GOLDEN_FLAME.get(), GoldenFlameRenderer::new);
-        EntityRenderers.register(SMCEntities.BLACK_HOLE.get(), BlackHoleRenderer::new);
-        EntityRenderers.register(SMCEntities.FLAME_CIRCLE.get(), FlameCircleRenderer::new);
+            EntityRenderers.register(SMCEntities.GOLDEN_FLAME.get(), GoldenFlameRenderer::new);
+            EntityRenderers.register(SMCEntities.BLACK_HOLE.get(), BlackHoleRenderer::new);
+            EntityRenderers.register(SMCEntities.FLAME_CIRCLE.get(), FlameCircleRenderer::new);
 
-        EntityRenderers.register(SMCEntities.SUPER_BAD_GOLEM.get(), SuperGolemRenderer::new);
-        EntityRenderers.register(SMCEntities.SUPER_GOOD_GOLEM.get(), SuperGolemRenderer::new);
+            EntityRenderers.register(SMCEntities.SUPER_BAD_GOLEM.get(), SuperGolemRenderer::new);
+            EntityRenderers.register(SMCEntities.SUPER_GOOD_GOLEM.get(), SuperGolemRenderer::new);
 
-        //NPC
-        EntityRenderers.register(SMCEntities.VILLAGER_NO_BRAIN.get(), VillagerRenderer::new);
-        EntityRenderers.register(SMCEntities.START_NPC.get(), VillagerRenderer::new);
-        EntityRenderers.register(SMCEntities.START_NPC_PLUS.get(), StartNpcPlusRenderer::new);
-        EntityRenderers.register(SMCEntities.START_NPC_BBQ.get(), StartNpcPlusRenderer::new);
-        EntityRenderers.register(SMCEntities.ZOMBIE_MAN.get(), ZombieManRenderer::new);
-        EntityRenderers.register(SMCEntities.CUSTOMER.get(), CustomerRenderer::new);
-        EntityRenderers.register(SMCEntities.FAKE_CUSTOMER.get(), CustomerRenderer::new);
-        EntityRenderers.register(SMCEntities.HE_SHEN.get(), SpecialNpcRenderer::new);
-        EntityRenderers.register(SMCEntities.TWO_KID.get(), SpecialNpcRenderer::new);
-        EntityRenderers.register(SMCEntities.THIEF1.get(), SpecialNpcRenderer::new);
-        EntityRenderers.register(SMCEntities.THIEF2.get(), SpecialNpcRenderer::new);
-        EntityRenderers.register(SMCEntities.VIRGIL_VILLAGER.get(), VirgilVillagerRenderer::new);
+            //NPC
+            EntityRenderers.register(SMCEntities.VILLAGER_NO_BRAIN.get(), VillagerRenderer::new);
+            EntityRenderers.register(SMCEntities.START_NPC.get(), VillagerRenderer::new);
+            EntityRenderers.register(SMCEntities.START_NPC_PLUS.get(), StartNpcPlusRenderer::new);
+            EntityRenderers.register(SMCEntities.START_NPC_BBQ.get(), StartNpcPlusRenderer::new);
+            EntityRenderers.register(SMCEntities.ZOMBIE_MAN.get(), ZombieManRenderer::new);
+            EntityRenderers.register(SMCEntities.CUSTOMER.get(), CustomerRenderer::new);
+            EntityRenderers.register(SMCEntities.FAKE_CUSTOMER.get(), CustomerRenderer::new);
+            EntityRenderers.register(SMCEntities.HE_SHEN.get(), SpecialNpcRenderer::new);
+            EntityRenderers.register(SMCEntities.TWO_KID.get(), SpecialNpcRenderer::new);
+            EntityRenderers.register(SMCEntities.THIEF1.get(), SpecialNpcRenderer::new);
+            EntityRenderers.register(SMCEntities.THIEF2.get(), SpecialNpcRenderer::new);
+            EntityRenderers.register(SMCEntities.VIRGIL_VILLAGER.get(), VirgilVillagerRenderer::new);
 
-        EntityRenderers.register(SMCEntities.P1NERO.get(), P1neroRenderer::new);
+            EntityRenderers.register(SMCEntities.P1NERO.get(), P1neroRenderer::new);
 
-        //MISC
-        EntityRenderers.register(SMCEntities.CUSTOM_COLOR_ITEM.get(), ItemEntityRenderer::new);
+            //MISC
+            EntityRenderers.register(SMCEntities.CUSTOM_COLOR_ITEM.get(), ItemEntityRenderer::new);
+            CustomGuiRenderer.init();
+        });
 
     }
 

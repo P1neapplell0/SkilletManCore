@@ -19,12 +19,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 
 @OnlyIn(Dist.CLIENT)
 public class CustomGuiRenderer {
@@ -33,6 +34,187 @@ public class CustomGuiRenderer {
     public static final ResourceLocation SPATULA_TEXTURE3 = ResourceLocation.fromNamespaceAndPath(SkilletManCoreMod.MOD_ID, "textures/item/diamond_spatula.png");
     public static final ResourceLocation MONEY_TEXTURE = ResourceLocation.parse("textures/item/emerald.png");
     public static final ResourceLocation TERM_ICON = SolarTerm.getFontIcon().withPrefix("textures/").withSuffix(".png");
+
+    private static final int HUD_TEXT_OFFSET = 4;
+    private static final int HUD_ICON_OFFSET = 22;
+    private static final int TUTORIAL_X = 6;
+    private static final float HINT_FADE_STEP = 0.12F;
+
+    private static boolean initialized;
+    private static List<TutorialCondition> tutorialConditions = List.of();
+    private static Component noTaskComponent = Component.empty();
+
+    private static Component cachedMoneyCount = Component.empty();
+    private static Component cachedTerm = Component.empty();
+    private static Component cachedLevel = Component.empty();
+    private static Component cachedWorkingState = Component.empty();
+    private static Component cachedFormattedTime = Component.empty();
+    private static Component cachedShowHintText = Component.empty();
+    private static List<FormattedCharSequence> cachedTutorialLines = List.of();
+    private static ResourceLocation cachedSpatulaTexture = SPATULA_TEXTURE;
+    private static int cachedStageColor = 0xFFFFFF;
+    private static int cachedTermX;
+    private static int cachedTermY;
+    private static int cachedScreenWidth;
+    private static int cachedLeftInfoY;
+    private static int cachedRightInfoY;
+    private static int cachedLineHeight;
+    private static int cachedTutorialLineHeight;
+    private static int cachedInterval;
+    private static int cachedRightTextX;
+    private static int cachedRightIconX;
+    private static int cachedHeaderWidth;
+    private static int cachedHeaderHeight;
+    private static int cachedTutorialPanelWidth;
+    private static int cachedTutorialPanelHeight;
+    private static int cachedTutorialAccentColor = 0xF2C14E;
+    private static float hintVisibilityProgress = 1.0F;
+
+    public static void init() {
+        if (initialized) {
+            return;
+        }
+        tutorialConditions = List.of(
+                new TutorialCondition(
+                        player -> !DataManager.firstGiftGot.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("find_villager_first").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
+                                SkilletManCoreMod.getInfo("find_villager_first2").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("find_villager_first3").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("find_villager_first4").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0xF2C14E
+                ),
+                new TutorialCondition(
+                        player -> !DataManager.firstWork.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("first_work").withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN),
+                                SkilletManCoreMod.getInfo("first_work2").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0x6BE675
+                ),
+                new TutorialCondition(
+                        player -> !DataManager.firstStopWork.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("first_stop_work").withStyle(ChatFormatting.BOLD, ChatFormatting.RED)
+                                        .append(SkilletManCoreMod.getInfo("first_stop_work2").withStyle(ChatFormatting.GRAY))
+                        ),
+                        0xFF7676
+                ),
+                new TutorialCondition(
+                        player -> !DataManager.firstGachaGot.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("find_villager_gacha").withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA),
+                                SkilletManCoreMod.getInfo("find_villager_gacha2").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("find_villager_gacha3").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0x6FD7FF
+                ),
+                new TutorialCondition(
+                        player -> DataManager.trailRequired.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("trial_required").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
+                                SkilletManCoreMod.getInfo("trial_required2").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("trial_required3").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0xF7D56B
+                ),
+                new TutorialCondition(
+                        player -> DataManager.showFirstPlaceWirelessTerminal.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("first_place_wireless_terminal").withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN),
+                                SkilletManCoreMod.getInfo("first_place_wireless_terminal1").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("first_place_wireless_terminal2").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("first_place_wireless_terminal3").withStyle(ChatFormatting.GRAY),
+                                SkilletManCoreMod.getInfo("first_place_wireless_terminal4").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0x4FB783
+                ),
+                new TutorialCondition(
+                        player -> DataManager.shouldShowMachineTicketHint.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("should_trade_machine_ticket").withStyle(ChatFormatting.BOLD, ChatFormatting.YELLOW),
+                                SkilletManCoreMod.getInfo("should_trade_machine_ticket2").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0xFFD86B
+                ),
+                new TutorialCondition(
+                        player -> DataManager.findBBQHint.get(player),
+                        mergeComponents(
+                                SkilletManCoreMod.getInfo("find_bbq").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
+                                SkilletManCoreMod.getInfo("find_bbq1").withStyle(ChatFormatting.GRAY)
+                        ),
+                        0xF29D52
+                )
+        );
+        noTaskComponent = mergeComponents(
+                SkilletManCoreMod.getInfo("no_task").withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GRAY),
+                SkilletManCoreMod.getInfo("no_task1").withStyle(ChatFormatting.GRAY),
+                SkilletManCoreMod.getInfo("no_task2").withStyle(ChatFormatting.GRAY)
+        );
+        initialized = true;
+    }
+
+    public static void tick() {
+        init();
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer localPlayer = minecraft.player;
+        if (localPlayer == null) {
+            return;
+        }
+
+        Font font = minecraft.font;
+        Window window = minecraft.getWindow();
+        SMCPlayer smcPlayer = SMCCapabilityProvider.getSMCPlayer(localPlayer);
+
+        cachedLineHeight = font.lineHeight + 6;
+        cachedTutorialLineHeight = font.lineHeight + 4;
+        cachedScreenWidth = window.getGuiScaledWidth();
+        cachedLeftInfoY = (int) (SMCConfig.INFO_Y_L.get() * cachedScreenWidth) + (int) (cachedLineHeight * 1.5F);
+        cachedRightInfoY = (int) (SMCConfig.INFO_Y_R.get() * cachedScreenWidth) + (int) (cachedLineHeight * 1.5F);
+        cachedInterval = SMCConfig.INTERVAL.get();
+
+        cachedMoneyCount = Component.literal(": " + smcPlayer.getMoneyCount());
+        cachedLevel = Component.literal(": " + smcPlayer.getLevel());
+        cachedRightTextX = cachedScreenWidth - font.width(cachedMoneyCount) - HUD_TEXT_OFFSET;
+        cachedRightIconX = cachedRightTextX - HUD_ICON_OFFSET;
+
+        SolarTerm solarTerm = EclipticUtil.getNowSolarTerm(localPlayer.clientLevel);
+        cachedTerm = Component.literal("[")
+                .append(solarTerm.getSeason().getTranslation())
+                .append("] ")
+                .append(solarTerm.getTranslation())
+                .withStyle(ChatFormatting.BOLD, solarTerm.getSeason().getColor());
+        cachedTermX = solarTerm.getIconPosition().getKey() * 30;
+        cachedTermY = solarTerm.getIconPosition().getValue() * 30;
+
+        cachedStageColor = switch (smcPlayer.getStage()) {
+            case 1 -> 0x84FBFF;
+            case 2 -> 0x40FF5F;
+            case 3 -> 0xFB4EE9;
+            default -> 0xFFFFFF;
+        };
+        cachedSpatulaTexture = switch (smcPlayer.getStage()) {
+            case 0 -> SPATULA_TEXTURE;
+            case 1 -> SPATULA_TEXTURE2;
+            default -> SPATULA_TEXTURE3;
+        };
+
+        boolean working = smcPlayer.isWorking();
+        cachedWorkingState = (working ? SkilletManCoreMod.getInfo("working") : SkilletManCoreMod.getInfo("resting"))
+                .withStyle(ChatFormatting.BOLD, working ? ChatFormatting.GREEN : ChatFormatting.GOLD);
+        cachedFormattedTime = Component.literal(convertMinecraftTime(localPlayer.level().getDayTime()))
+                .withStyle(working ? ChatFormatting.GREEN : ChatFormatting.GOLD);
+
+        updateTutorialCache(localPlayer, font);
+
+        float targetVisibility = SMCConfig.SHOW_HINT.get() ? 1.0F : 0.0F;
+        if (hintVisibilityProgress < targetVisibility) {
+            hintVisibilityProgress = Math.min(targetVisibility, hintVisibilityProgress + HINT_FADE_STEP);
+        } else if (hintVisibilityProgress > targetVisibility) {
+            hintVisibilityProgress = Math.max(targetVisibility, hintVisibilityProgress - HINT_FADE_STEP);
+        }
+    }
 
     public static boolean shouldRender() {
         if (Minecraft.getInstance().screen instanceof DialogueScreen) {
@@ -46,58 +228,34 @@ public class CustomGuiRenderer {
             return;
         }
 
-        LocalPlayer localPlayer = Minecraft.getInstance().player;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
             return;
         }
-        SMCPlayer smcPlayer = SMCCapabilityProvider.getSMCPlayer(localPlayer);
-        Window window = Minecraft.getInstance().getWindow();
-        Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 6;
-        int screenW = window.getGuiScaledWidth();
-        int screenH = window.getGuiScaledHeight();
-        int yL = (int) (SMCConfig.INFO_Y_L.get() * window.getGuiScaledWidth()) + (int) (lineHeight * 1.5F);
-        int yR = (int) (SMCConfig.INFO_Y_R.get() * window.getGuiScaledWidth()) + (int) (lineHeight * 1.5F);
-        int interval = SMCConfig.INTERVAL.get();
-        Component moneyCount = Component.literal(": " + smcPlayer.getMoneyCount());
-        SolarTerm solarTerm = EclipticUtil.getNowSolarTerm(localPlayer.clientLevel);
-        Component term = Component.literal("[").append(solarTerm.getSeason().getTranslation()).append("] ").append(solarTerm.getTranslation()).withStyle(ChatFormatting.BOLD, solarTerm.getSeason().getColor());
-        int offsetX = font.width(moneyCount) + 4;
-
-        int stageColor = switch (smcPlayer.getStage()) {
-            case 1 -> 0x84fbff;
-            case 2 -> 0x40ff5f;
-            case 3 -> 0xfb4ee9;
-            default -> 16777215;
-        };
-        ResourceLocation spatulaTexture = switch (smcPlayer.getStage()) {
-            case 0 -> SPATULA_TEXTURE;
-            case 1 -> SPATULA_TEXTURE2;
-            default -> SPATULA_TEXTURE3;
-        };
+        if (!initialized || cachedScreenWidth == 0) {
+            tick();
+        }
+        Font font = minecraft.font;
 
         //日历
-        int termX = solarTerm.getIconPosition().getKey();
-        int termY = solarTerm.getIconPosition().getValue();
-        guiGraphics.blit(TERM_ICON, 2, 2, 16, 16, termX * 30, termY * 30, 30, 30, 180, 120);
-        guiGraphics.drawString(font, term, 24, 7, stageColor, true);
+        guiGraphics.blit(TERM_ICON, 2, 2, 16, 16, cachedTermX, cachedTermY, 30, 30, 180, 120);
+        guiGraphics.drawString(font, cachedTerm, 24, 7, cachedStageColor, true);
 
         //任务提示
-        if (Minecraft.getInstance().screen == null) {
-            renderTutorial(guiGraphics, localPlayer, smcPlayer, font, lineHeight, screenW, screenH, 0, yL);
+        if (minecraft.screen == null) {
+            renderTutorial(guiGraphics, font);
         }
 
         //声望等级
-        guiGraphics.blit(spatulaTexture, screenW - offsetX - 22, yR - 65, 20, 20, 0.0F, 0.0F, 1, 1, 1, 1);
-        guiGraphics.drawString(font, ": " + smcPlayer.getLevel(), screenW - offsetX, yR - 65 + 5, stageColor, true);
+        guiGraphics.blit(cachedSpatulaTexture, cachedRightIconX, cachedRightInfoY - 65, 20, 20, 0.0F, 0.0F, 1, 1, 1, 1);
+        guiGraphics.drawString(font, cachedLevel, cachedRightTextX, cachedRightInfoY - 60, cachedStageColor, true);
         //金币
-        guiGraphics.blit(MONEY_TEXTURE, screenW - offsetX - 22, yR - 40, 20, 20, 0.0F, 0.0F, 1, 1, 1, 1);
-        guiGraphics.drawString(font, moneyCount, screenW - offsetX, yR - 40 + 5, 16777215, true);
+        guiGraphics.blit(MONEY_TEXTURE, cachedRightIconX, cachedRightInfoY - 40, 20, 20, 0.0F, 0.0F, 1, 1, 1, 1);
+        guiGraphics.drawString(font, cachedMoneyCount, cachedRightTextX, cachedRightInfoY - 35, 0xFFFFFF, true);
         //工作状态
-        guiGraphics.drawString(font, smcPlayer.isWorking() ? SkilletManCoreMod.getInfo("working").withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN) : SkilletManCoreMod.getInfo("resting").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD), screenW - offsetX - 22, yR + font.lineHeight + interval - 40, 0x00ff00, true);
-        long time = localPlayer.level().getDayTime();
-        String formattedTime = convertMinecraftTime(time);
-        guiGraphics.drawString(font, Component.literal(formattedTime).withStyle(smcPlayer.isWorking() ? ChatFormatting.GREEN : ChatFormatting.GOLD), screenW - offsetX - 22, yR + font.lineHeight * 2 + interval - 40, 0x00ff00, true);
+        guiGraphics.drawString(font, cachedWorkingState, cachedRightIconX, cachedRightInfoY + font.lineHeight + cachedInterval - 40, 0x00FF00, true);
+        guiGraphics.drawString(font, cachedFormattedTime, cachedRightIconX, cachedRightInfoY + font.lineHeight * 2 + cachedInterval - 40, 0x00FF00, true);
     }
 
     public static String convertMinecraftTime(long time) {
@@ -125,138 +283,115 @@ public class CustomGuiRenderer {
         return String.format("%02d:%02d", hours, minutes);
     }
 
-    public static void renderTutorial(GuiGraphics guiGraphics, LocalPlayer localPlayer, SMCPlayer smcPlayer, Font font, int lineHeight, int screenW, int screenH, int x, int y) {
-        List<TutorialCondition> conditions = Arrays.asList(
-                new TutorialCondition(
-                        () -> !DataManager.firstGiftGot.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("find_villager_first").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
-                                SkilletManCoreMod.getInfo("find_villager_first2").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("find_villager_first3").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("find_villager_first4").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> !DataManager.firstWork.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("first_work").withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN),
-                                SkilletManCoreMod.getInfo("first_work2").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> !DataManager.firstStopWork.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("first_stop_work").withStyle(ChatFormatting.BOLD, ChatFormatting.RED),
-                                SkilletManCoreMod.getInfo("first_stop_work2").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> !DataManager.firstGachaGot.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("find_villager_gacha").withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA),
-                                SkilletManCoreMod.getInfo("find_villager_gacha2").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("find_villager_gacha3").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> DataManager.trailRequired.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("trial_required").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
-                                SkilletManCoreMod.getInfo("trial_required2").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("trial_required3").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> DataManager.showFirstPlaceWirelessTerminal.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("first_place_wireless_terminal").withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN),
-                                SkilletManCoreMod.getInfo("first_place_wireless_terminal1").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("first_place_wireless_terminal2").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("first_place_wireless_terminal3").withStyle(ChatFormatting.GRAY),
-                                SkilletManCoreMod.getInfo("first_place_wireless_terminal4").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(
-                        () -> DataManager.shouldShowMachineTicketHint.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("should_trade_machine_ticket").withStyle(ChatFormatting.BOLD, ChatFormatting.YELLOW),
-                                SkilletManCoreMod.getInfo("should_trade_machine_ticket2").withStyle(ChatFormatting.GRAY)
-                        }
-                ),
-                new TutorialCondition(() -> DataManager.findBBQHint.get(localPlayer),
-                        new Component[]{
-                                SkilletManCoreMod.getInfo("find_bbq").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD),
-                                SkilletManCoreMod.getInfo("find_bbq1").withStyle(ChatFormatting.GRAY)
-                        }
-                )
-        );
+    public static void renderTutorial(GuiGraphics guiGraphics, Font font) {
+        int headerY = cachedLeftInfoY + cachedLineHeight - 4;
+        drawHintPanel(guiGraphics, TUTORIAL_X - 4, headerY - 4, cachedHeaderWidth, cachedHeaderHeight, 0xD8FFFFFF, 0xC814171C, 0x8FA6B2);
+        guiGraphics.drawString(font, cachedShowHintText, TUTORIAL_X + 4, headerY + 2, 0xF4F6F8, false);
 
-        //隐藏提示
-        MutableComponent show = Component.literal("§7§l[§r");
-        boolean hasTodo = conditions.stream().anyMatch(c -> c.condition.get());
+        if (hintVisibilityProgress <= 0.0F || cachedTutorialLines.isEmpty()) {
+            return;
+        }
+
+        int alpha = Math.max(0, Math.min(255, (int) (hintVisibilityProgress * 255.0F)));
+        int panelY = headerY + cachedHeaderHeight + 4;
+        drawHintPanel(guiGraphics, TUTORIAL_X - 4, panelY, cachedTutorialPanelWidth, cachedTutorialPanelHeight,
+                withAlpha((int) (alpha * 0.92F), 0xFFFFFF),
+                withAlpha((int) (alpha * 0.82F), 0x14171C),
+                withAlpha(alpha, cachedTutorialAccentColor));
+
+        int textX = TUTORIAL_X + 8;
+        int textY = panelY + 8;
+        int textColor = withAlpha(alpha, 0xF5F7FA);
+        for (FormattedCharSequence line : cachedTutorialLines) {
+            guiGraphics.drawString(font, line, textX, textY, textColor, false);
+            textY += cachedTutorialLineHeight;
+        }
+    }
+
+    private static void updateTutorialCache(LocalPlayer localPlayer, Font font) {
+        TutorialCondition activeCondition = null;
+        for (TutorialCondition condition : tutorialConditions) {
+            if (condition.condition.test(localPlayer)) {
+                activeCondition = condition;
+                break;
+            }
+        }
+
+        boolean hasTodo = activeCondition != null;
+        MutableComponent show;
         if (SMCConfig.SHOW_HINT.get()) {
             show = SkilletManCoreMod.getInfo("press_x_to_show_hint",
-                            KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.DARK_GREEN))
+                    KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN))
+                    .copy()
                     .withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY);
         } else {
-            show.append(KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy()
-                            .withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN)
-                            .append("§7§l]"))
-                    .withStyle(ChatFormatting.BOLD);
+            show = Component.literal("[")
+                    .withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY)
+                    .append(KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN))
+                    .append(Component.literal("] ").withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY));
             if (hasTodo) {
                 show.append(SkilletManCoreMod.getInfo("task_todo_tip"));
             }
         }
 
         if (DataManager.hintUpdated.get(localPlayer)) {
-            show.append(SkilletManCoreMod.getInfo("hint_update_tip"))
-                    .append((localPlayer.tickCount / 10) % 2 == 0 ?
-                            Component.literal("⭐").withStyle(ChatFormatting.GOLD) : Component.empty());
-        }
-
-        guiGraphics.fillGradient(2, y + lineHeight - 2, 8 + font.width(show) + 2, y + lineHeight, 0x66000000, 0x66000000);
-        guiGraphics.drawString(font, show, 4, y + lineHeight, 0x00ff00, true);
-
-        if (!SMCConfig.SHOW_HINT.get()) {
-            return;
-        }
-
-        boolean found = false;
-        for (TutorialCondition condition : conditions) {
-            if (condition.condition.get()) {
-                renderCondition(guiGraphics, font, lineHeight, y, condition.components);
-                found = true;
-                break;
+            show.append(SkilletManCoreMod.getInfo("hint_update_tip"));
+            if ((localPlayer.tickCount / 10) % 2 == 0) {
+                show.append(Component.literal("⭐").withStyle(ChatFormatting.GOLD));
             }
         }
 
-        if (!found) {
-            Component[] defaultComponents = {
-                    SkilletManCoreMod.getInfo("no_task").withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GRAY),
-                    SkilletManCoreMod.getInfo("no_task1").withStyle(ChatFormatting.GRAY),
-                    SkilletManCoreMod.getInfo("no_task2").withStyle(ChatFormatting.GRAY)
-            };
-            renderCondition(guiGraphics, font, lineHeight, y, defaultComponents);
+        cachedShowHintText = show;
+        cachedHeaderWidth = font.width(cachedShowHintText) + 18;
+        cachedHeaderHeight = font.lineHeight + 12;
+
+        Component tutorialText = activeCondition != null ? activeCondition.component : noTaskComponent;
+        cachedTutorialAccentColor = activeCondition != null ? activeCondition.accentColor : 0x8F98A4;
+        int wrapWidth = Mth.clamp(cachedScreenWidth / 3, 160, 300);
+        cachedTutorialLines = font.split(tutorialText, wrapWidth);
+        int maxLineWidth = 0;
+        for (FormattedCharSequence line : cachedTutorialLines) {
+            maxLineWidth = Math.max(maxLineWidth, font.width(line));
         }
+        cachedTutorialPanelWidth = maxLineWidth + 24;
+        cachedTutorialPanelHeight = cachedTutorialLines.size() * cachedTutorialLineHeight + 16;
     }
 
-    private static void renderCondition(GuiGraphics guiGraphics, Font font, int lineHeight, int y, Component[] components) {
-        int maxWidth = 0;
-        for (Component component : components) {
-            maxWidth = Math.max(maxWidth, font.width(component));
-        }
-
-        int lines = components.length;
-        guiGraphics.fillGradient(2, y + lineHeight * 2 - 2,
-                8 + maxWidth + 2, y + lineHeight * (2 + lines), 0x66000000, 0x66000000);
-
+    private static MutableComponent mergeComponents(Component... components) {
+        MutableComponent merged = Component.empty();
         for (int i = 0; i < components.length; i++) {
-            guiGraphics.drawString(font, components[i], 4,
-                    y + lineHeight * (2 + i), 0x00ff00, true);
+            if (i > 0) {
+                merged.append(Component.literal("\n"));
+            }
+            merged.append(components[i].copy());
         }
+        return merged;
     }
 
-    private record TutorialCondition(Supplier<Boolean> condition, Component[] components) {
+    private static void drawHintPanel(GuiGraphics guiGraphics, int x, int y, int width, int height, int borderColor, int backgroundColor, int accentColor) {
+        int x2 = x + width;
+        int y2 = y + height;
+        guiGraphics.fill(x + 1, y + 1, x2 - 1, y2 - 1, backgroundColor);
+        guiGraphics.fillGradient(x + 1, y + 1, x2 - 1, y2 - 1,
+                withAlpha(Math.min(255, alphaOf(backgroundColor) + 18), 0x232830),
+                backgroundColor);
+        guiGraphics.fill(x, y, x2, y + 1, borderColor);
+        guiGraphics.fill(x, y2 - 1, x2, y2, withAlpha(Math.max(0, alphaOf(borderColor) - 36), 0xFFFFFF));
+        guiGraphics.fill(x, y, x + 1, y2, borderColor);
+        guiGraphics.fill(x2 - 1, y, x2, y2, withAlpha(Math.max(0, alphaOf(borderColor) - 36), 0xFFFFFF));
+        guiGraphics.fill(x + 2, y + 2, x + 4, y2 - 2, accentColor);
+        guiGraphics.fill(x + 2, y + 2, x2 - 2, y + 3, withAlpha(Math.max(0, alphaOf(borderColor) - 80), 0xFFFFFF));
+    }
+
+    private static int withAlpha(int alpha, int rgb) {
+        return (Mth.clamp(alpha, 0, 255) << 24) | (rgb & 0xFFFFFF);
+    }
+
+    private static int alphaOf(int color) {
+        return color >>> 24;
+    }
+
+    private record TutorialCondition(Predicate<LocalPlayer> condition, Component component, int accentColor) {
     }
 
 }
