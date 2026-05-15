@@ -53,10 +53,8 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.p3pp3rf1y.sophisticatedbackpacks.init.ModItems;
-import yesman.epicfight.client.input.EpicFightKeyMappings;
 import yesman.epicfight.gameasset.EpicFightSkills;
 import yesman.epicfight.world.capabilities.EpicFightCapabilities;
-import yesman.epicfight.world.capabilities.entitypatch.player.PlayerPatch;
 import yesman.epicfight.world.capabilities.entitypatch.player.ServerPlayerPatch;
 import yesman.epicfight.world.capabilities.item.CapabilityItem;
 import yesman.epicfight.world.capabilities.item.WeaponCapability;
@@ -150,6 +148,7 @@ public class PlayerEventListeners {
 
             if (!DataManager.firstJoint.get(serverPlayer)) {
                 DataManager.firstJoint.put(serverPlayer, true);
+                DataManager.hintUpdated.put(serverPlayer, true);
                 CommandSourceStack commandSourceStack = serverPlayer.createCommandSourceStack().withPermission(2);
                 Objects.requireNonNull(serverPlayer.getServer()).getCommands().performPrefixedCommand(commandSourceStack, "gamerule keepInventory true");
                 Objects.requireNonNull(serverPlayer.getServer()).getCommands().performPrefixedCommand(commandSourceStack, "gamerule mobGriefing false");
@@ -158,7 +157,6 @@ public class PlayerEventListeners {
                 serverPlayer.setItemSlot(EquipmentSlot.HEAD, FAItems.THIEF_HELMET.get().getDefaultInstance());
                 serverPlayer.setItemSlot(EquipmentSlot.CHEST, FAItems.THIEF_CHESTPLATE.get().getDefaultInstance());
 
-                ItemUtil.addItem(serverPlayer, SMCBlocks.MAIN_COOK_BLOCK.get().asItem(), 1);
                 ItemUtil.addItem(serverPlayer, ModItems.NETHERITE_BACKPACK.get(), 1);
                 ItemUtil.addItem(serverPlayer, CDItems.SKILLET.asItem(), 1);
                 ItemUtil.addItem(serverPlayer, CDItems.SPATULA.asItem(), 1);
@@ -179,6 +177,9 @@ public class PlayerEventListeners {
                 ItemUtil.addItem(serverPlayer, dodgeDisplay);
                 ItemUtil.addItem(serverPlayer, guard);
                 ItemUtil.addItem(serverPlayer, parrying);
+                if(serverPlayer.getServer().getPlayerList().getPlayers().size() > 4) {
+                    ItemUtil.addItem(serverPlayer, SMCBlocks.MAIN_COOK_BLOCK.get().asItem(), 1);
+                }
             }
 
             DataManager.spatulaCombo.put(serverPlayer, 0.0);

@@ -138,9 +138,9 @@ dependencies {
         jarJar.ranged(it, "[1.2.0,)")
     }
 
-    implementation fg.deobf('curse.maven:touhou-little-maid-355044:6613821-sources-6613853')
-    implementation fg.deobf("curse.maven:patchouli-306770:6164575")
-    implementation fg.deobf("curse.maven:maidsoul-kitchen-1162577:6342482")
+//    implementation fg.deobf('curse.maven:touhou-little-maid-355044:6613821-sources-6613853')
+//    implementation fg.deobf("curse.maven:patchouli-306770:6164575")
+//    implementation fg.deobf("curse.maven:maidsoul-kitchen-1162577:6342482")
 
     //TODO 临时导入！
 //    implementation fg.deobf("curse.maven:panoramica-426082:4019292")
@@ -166,7 +166,7 @@ dependencies {
     //地图
     implementation fg.deobf("curse.maven:xaeros-world-map-317780:6212636")//大地图
     implementation fg.deobf("curse.maven:xaeros-minimap-263420:6306152")//小地图
-    implementation fg.deobf("curse.maven:epic-terrain-compatible-1137535:6908716")
+    implementation fg.deobf("libs:epic-terrain_compatible:0.2")
 
     //更好的村庄
     implementation fg.deobf("curse.maven:better-village-forge-615352:6306266")
@@ -200,6 +200,7 @@ dependencies {
     implementation fg.deobf("curse.maven:glitchcore-955399:5787839")
 
     implementation fg.deobf("curse.maven:ecliptic-seasons-1118306:8093796")
+//    implementation fg.deobf("curse.maven:ecliptic-seasons-1118306:6544587")
 
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:4.4.7")
     implementation fg.deobf("curse.maven:fantasy-armor-1083998:6385161")
@@ -231,6 +232,7 @@ dependencies {
 //    implementation fg.deobf("libs:eflw:20.9.0")
 
     //优化
+    implementation fg.deobf("curse.maven:modern-ui-352491:6956345")
     implementation fg.deobf("curse.maven:embeddium-908741:5681725")
 //    implementation fg.deobf("curse.maven:entityculling-448233:6355861")
     implementation fg.deobf("curse.maven:immediatelyfast-686911:6312293")

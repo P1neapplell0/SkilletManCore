@@ -22,6 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -213,6 +214,13 @@ public class DialogueScreen extends Screen {
                 smcNpc.setTalkingAnimTimer(30);
             }
             mob.level().playLocalSound(mob.getX(), mob.getY(), mob.getZ(),  ((MobInvoker)mob).smc$invokeGetAmbientSound(), mob.getSoundSource(), 1.0F, 1.0F, false);
+        }
+    }
+
+    public void playSound(SoundEvent soundEvent) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if(Minecraft.getInstance().level != null && player != null) {
+            Minecraft.getInstance().level.playLocalSound(player.getX(), player.getY(), player.getZ(),  soundEvent, player.getSoundSource(), 1.0F, 1.0F, false);
         }
     }
 

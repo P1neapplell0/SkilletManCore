@@ -285,14 +285,14 @@ public class CustomGuiRenderer {
 
     public static void renderTutorial(GuiGraphics guiGraphics, Font font) {
         int headerY = cachedLeftInfoY + cachedLineHeight - 4;
-        drawHintPanel(guiGraphics, TUTORIAL_X - 4, headerY - 4, cachedHeaderWidth, cachedHeaderHeight, 0xD8FFFFFF, 0xC814171C, 0x8FA6B2);
+        int alpha = Math.max(0, Math.min(255, (int) (hintVisibilityProgress * 255.0F)));
+        drawHintPanel(guiGraphics, TUTORIAL_X - 4, headerY - 4, cachedHeaderWidth, cachedHeaderHeight, 0xD8FFFFFF, 0xC814171C, withAlpha(alpha, cachedTutorialAccentColor));
         guiGraphics.drawString(font, cachedShowHintText, TUTORIAL_X + 4, headerY + 2, 0xF4F6F8, false);
 
         if (hintVisibilityProgress <= 0.0F || cachedTutorialLines.isEmpty()) {
             return;
         }
 
-        int alpha = Math.max(0, Math.min(255, (int) (hintVisibilityProgress * 255.0F)));
         int panelY = headerY + cachedHeaderHeight + 4;
         drawHintPanel(guiGraphics, TUTORIAL_X - 4, panelY, cachedTutorialPanelWidth, cachedTutorialPanelHeight,
                 withAlpha((int) (alpha * 0.92F), 0xFFFFFF),
@@ -323,12 +323,12 @@ public class CustomGuiRenderer {
             show = SkilletManCoreMod.getInfo("press_x_to_show_hint",
                     KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN))
                     .copy()
-                    .withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY);
+                    .withStyle(ChatFormatting.BOLD);
         } else {
             show = Component.literal("[")
-                    .withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY)
+                    .withStyle(ChatFormatting.BOLD)
                     .append(KeyMappings.SHOW_HINT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_GREEN))
-                    .append(Component.literal("] ").withStyle(ChatFormatting.BOLD, ChatFormatting.GRAY));
+                    .append(Component.literal("] ").withStyle(ChatFormatting.BOLD));
             if (hasTodo) {
                 show.append(SkilletManCoreMod.getInfo("task_todo_tip"));
             }
@@ -339,10 +339,12 @@ public class CustomGuiRenderer {
             if ((localPlayer.tickCount / 10) % 2 == 0) {
                 show.append(Component.literal("⭐").withStyle(ChatFormatting.GOLD));
             }
+        } else {
+            show.append(Component.literal("⭐").withStyle(ChatFormatting.GOLD));
         }
 
         cachedShowHintText = show;
-        cachedHeaderWidth = font.width(cachedShowHintText) + 18;
+        cachedHeaderWidth = font.width(cachedShowHintText) + 12;
         cachedHeaderHeight = font.lineHeight + 12;
 
         Component tutorialText = activeCondition != null ? activeCondition.component : noTaskComponent;
@@ -353,15 +355,21 @@ public class CustomGuiRenderer {
         for (FormattedCharSequence line : cachedTutorialLines) {
             maxLineWidth = Math.max(maxLineWidth, font.width(line));
         }
-        cachedTutorialPanelWidth = maxLineWidth + 24;
+        cachedTutorialPanelWidth = maxLineWidth + 18;
         cachedTutorialPanelHeight = cachedTutorialLines.size() * cachedTutorialLineHeight + 16;
     }
 
     private static MutableComponent mergeComponents(Component... components) {
         MutableComponent merged = Component.empty();
         for (int i = 0; i < components.length; i++) {
-            if (i > 0) {
+            if (i == 1) {
                 merged.append(Component.literal("\n"));
+            }
+            if(i > 0) {
+                if(i > 1) {
+                    merged.append(" ");
+                }
+                merged.append(i + ".");
             }
             merged.append(components[i].copy());
         }
@@ -380,7 +388,6 @@ public class CustomGuiRenderer {
         guiGraphics.fill(x, y, x + 1, y2, borderColor);
         guiGraphics.fill(x2 - 1, y, x2, y2, withAlpha(Math.max(0, alphaOf(borderColor) - 36), 0xFFFFFF));
         guiGraphics.fill(x + 2, y + 2, x + 4, y2 - 2, accentColor);
-        guiGraphics.fill(x + 2, y + 2, x2 - 2, y + 3, withAlpha(Math.max(0, alphaOf(borderColor) - 80), 0xFFFFFF));
     }
 
     private static int withAlpha(int alpha, int rgb) {
